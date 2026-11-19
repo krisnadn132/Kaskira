@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4f46e5">
+    <title>Krisna's Vault - Enterprise Financial System</title>
+    <link rel="icon" type="image/png" href="assets/icon-192.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Krisna's Vault">
+    <link rel="apple-touch-icon" href="assets/icon-192.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="style.css?v=0.4">
+</head>
+<body data-theme="dark">
+    <!-- Global Modal Container -->
+    <div id="modal-container" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-title" id="modal-title"><span class="material-icons-round">info</span> Title</div>
+            <div class="modal-body" id="modal-body">Body content goes here.</div>
+            <div class="modal-actions" id="modal-actions"></div>
+        </div>
+    </div>
+
+    <!-- Authentication Screen -->
+    <div id="login-screen">
+        <div class="login-card">
+            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--primary), #ec4899); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);">
+                <span class="material-icons-round" style="font-size: 40px; color: white;">wallet</span>
+            </div>
+            <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 5px; color: var(--text-main);">Krisna's Vault</h2>
+            <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 32px;">Enterprise Offline Storage</p>
+            <form id="loginForm">
+                <div class="form-group">
+                    <input type="text" id="login-username" class="form-control" placeholder="Username" required autocomplete="username">
+                </div>
+                <div class="form-group pwd-wrapper">
+                    <input type="password" id="login-password" class="form-control" placeholder="Password" required autocomplete="current-password">
+                    <button type="button" class="btn-eye" id="btn-toggle-pwd"><span class="material-icons-round">visibility</span></button>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 8px; padding: 14px; font-size: 1rem;">Unlock Vault</button>
+                <p id="login-error" style="color: var(--danger); display: none; margin-top: 16px; font-size: 0.85rem; font-weight: 600; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 10px; border-radius: 6px;">Authentication Failed! Check Credentials.</p>
+            </form>
+            <p style="margin-top:32px; font-size: 0.75rem; color: var(--text-muted);">🛡️ Data is heavily encrypted and stored locally.</p>
+        </div>
+    </div>
+
+    <div id="app-wrapper" style="display: none; width: 100%; height: 100%;">
+        <!-- Main Sidebar Navigation -->
+        <aside id="sidebar">
+            <div class="brand"><span class="material-icons-round">account_balance</span> Krisna's</div>
+            <nav id="main-nav">
+                <a href="#view-dashboard" class="nav-link active" data-target="view-dashboard" data-title="Dashboard Overview">
+                    <span class="material-icons-round">dashboard</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#view-budget" class="nav-link" data-target="view-budget" data-title="Planner & Budget">
+                    <span class="material-icons-round">track_changes</span>
+                    <span>Planner</span>
+                </a>
+                <a href="#view-subscriptions" class="nav-link" data-target="view-subscriptions" data-title="Subscriptions">
+                    <span class="material-icons-round">event_repeat</span>
+                    <span>Subscriptions</span>
+                </a>
+                <a href="#view-savings" class="nav-link" data-target="view-savings" data-title="Savings Goals">
+                    <span class="material-icons-round">savings</span>
+                    <span>Savings</span>
+                </a>
+                <a href="#view-wishlist" class="nav-link" data-target="view-wishlist" data-title="Purchase Wishlist">
+                    <span class="material-icons-round">shopping_bag</span>
+                    <span>Wishlist</span>
+                </a>
+                <a href="#view-settings" class="nav-link" data-target="view-settings" data-title="System Settings">
+                    <span class="material-icons-round">tune</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="profile-card">
+                    <div class="profile-avatar">
+                        <img src="assets/krisna.png" alt="Foto Profil" onerror="this.src='https://ui-avatars.com/api/?name=Krisna&background=4f46e5&color=fff'">
+                    </div>
+                    <div style="flex: 1; overflow: hidden;">
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--text-main); white-space: nowrap; text-overflow: ellipsis; overflow: hidden; margin-left: 16px;">Krisna's</p>
+                        <p style="font-size: 0.75rem; color: var(--success); font-weight: 600; margin-left: 16px;">Personal Website</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-logout" id="btn-logout"><span class="material-icons-round" style="font-size: 18px;">lock_outline</span> Lock Vault</button>
+            </div>
+        </aside>
+
+        <main id="main-content">
+        <header class="vault-main-header">
+                <div class="header-title">
+                    <h1 id="page-title">Dashboard</h1>
+                    <p id="current-date">Loading date...</p>
+                </div>
+
+                <!-- Time Filter & User Controls -->
+                <div class="header-actions">
+                    <div class="bottom-sheet-overlay" id="sheet-overlay"></div>
+                    
+                    <!-- Time Filter (Diperlebar & Proporsional) -->
+                    <div class="time-machine-group">
+                        <span class="material-icons-round" style="color:var(--primary); font-size:22px;">calendar_month</span>
+                        <select id="filter-mode" class="time-select" title="Filter Mode" style="font-weight: 700; color: var(--primary);">
+                            <option value="monthly">Month & Year</option>
+                            <option value="range">Period</option>
+                        </select>
+
+                        <select id="filter-year" class="time-select" title="Select Year"></select>
+                        <select id="filter-month" class="time-select" title="Select Month">
+                            <option value="all">All Months</option>
+                            <option value="01">January</option>
+                            <option value="02">February</option>
+                            <option value="03">March</option>
+                            <option value="04">April</option>
+                            <option value="05">May</option>
+                            <option value="06">June</option>
+                            <option value="07">July</option>
+                            <option value="08">August</option>
+                            <option value="09">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+
+                        <div id="filter-range-inputs" style="display: none; align-items: center; gap: 6px;">
+                            <input type="date" id="filter-start" title="Dari Tanggal" class="time-select" style="font-weight: 600;">
+                            <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: bold;">-</span>
+                            <input type="date" id="filter-end" title="Sampai Tanggal" class="time-select" style="font-weight: 600;">
+                        </div>
+                    </div>
+
+                    <!-- User Controls (CSV Biru, PDF Merah Ikon Putih, Theme, Profil) -->
+                    <div class="hover-menu-wrapper">
+                        <div class="main-circle profile-avatar header-avatar-mobile">
+                            <img src="assets/krisna.png" alt="Foto Profil" onerror="this.src='https://ui-avatars.com/api/?name=Krisna&background=4f46e5&color=fff'">
+                        </div>
+                        
+                        <div class="submenu-container">                        
+                            <!-- Tombol CSV (Biru) -->
+                            <button type="button" class="btn-icon sub-circle csv-btn" id="btn-export-csv" title="Export CSV">
+                                <span class="material-icons-round">download</span>
+                                <span class="csv-text">CSV</span>
+                            </button>
+
+                            <!-- Tombol PDF (Merah Solid, Ikon Putih, Tanpa Teks) -->
+                            <button type="button" class="btn-icon sub-circle pdf-btn" id="btn-export-pdf" title="Export PDF Report">
+                                <span class="material-icons-round">picture_as_pdf</span>
+                            </button>
+
+                            <!-- Tombol Tema Global Aplikasi -->
+                            <button type="button" class="btn-icon sub-circle theme-btn" id="btn-theme-toggle" title="Toggle Dark/Light Mode">
+                                <span class="material-icons-round" id="theme-icon">light_mode</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Dashboard View: Summary Cards & Charts -->
+            <section id="view-dashboard" class="view-section active">
+                <div class="insight-banner" id="financial-insight">
+                    <div class="icon-box"><span class="material-icons-round">psychology</span></div>
+                    <div class="insight-text">
+                        <h4>Financial AI Insight (Filtered Period)</h4>
+                        <p id="insight-message">Analyzing your financial data...</p>
+                    </div>
+                </div>
+
+                <div class="grid-4">
+                    <div class="stat-card" style="border-left: 4px solid var(--info);">
+                        <div class="stat-icon" style="background: var(--info);"><span class="material-icons-round">diamond</span></div>
+                        <div class="stat-info"><h3 title="Total Cumulative Net Worth">Total Net Worth</h3><h2 id="dash-networth">Rp 0</h2></div>
+                    </div>
+                    <div class="stat-card" style="border-left: 4px solid var(--primary);">
+                        <div class="stat-icon" style="background: var(--primary);"><span class="material-icons-round">account_balance_wallet</span></div>
+                        <div class="stat-info"><h3 title="Cumulative Fiat Balance">Fiat Balance</h3><h2 id="dash-balance">Rp 0</h2></div>
+                    </div>
+                    <div class="stat-card" style="border-left: 4px solid var(--success);">
+                        <div class="stat-icon" style="background: var(--success);"><span class="material-icons-round">south_west</span></div>
+                        <div class="stat-info"><h3 title="Income for Selected Period">Filtered Income</h3><h2 id="dash-income">Rp 0</h2></div>
+                    </div>
+                    <div class="stat-card" style="border-left: 4px solid var(--danger);">
+                        <div class="stat-icon" style="background: var(--danger);"><span class="material-icons-round">north_east</span></div>
+                        <div class="stat-info"><h3 title="Expense for Selected Period">Filtered Expense</h3><h2 id="dash-expense">Rp 0</h2></div>
+                    </div>
+                </div>
+                
+                <div class="grid-chart">
+                    <div class="panel">
+                        <h2 class="panel-title"><span class="material-icons-round" style="color:var(--primary);">bar_chart</span> Cashflow Trend</h2>
+                        <div class="chart-container"><canvas id="dashboardChart"></canvas></div>
+                    </div>
+                    <div class="panel" style="display: flex; flex-direction: column;">
+                        <h2 class="panel-title"><span class="material-icons-round" style="color:var(--warning);">pie_chart</span> Expense Breakdown</h2>
+                        <div class="chart-container" style="flex: 1; min-height: 250px;"><canvas id="expensePieChart"></canvas></div>
+                    </div>
+                </div>
+                
+                <!-- Quick Transaction Logger -->
+                <div class="panel quick-log-panel">
+                    <h2 class="panel-title"><span class="material-icons-round" style="color:var(--success);">flash_on</span> Quick Log Transaction</h2>
+                    
+                    <!-- AI Smart Parser -->
+                    <div class="form-group" style="margin-top: 10px; margin-bottom: 14px;">
+                        <div class="ai-parser-row">
+                            <input type="text" id="ai-text-input" class="form-control" placeholder="Contoh: 'Beli kopi 25rb' atau 'Gajian 10jt'...">
+                            <div class="ai-parser-actions">
+                                <button type="button" id="btn-ai-text-submit" class="btn-primary" title="Proses dengan AI">
+                                    <span class="material-icons-round" style="font-size: 20px;">auto_awesome</span>
+                                </button>
+                                <button type="button" id="btn-voice-tx" class="btn-voice-icon" title="Input Suara">
+                                    <span class="material-icons-round" style="font-size: 20px;">mic</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="voice-feedback" style="display: none; color: var(--info); font-size: 0.85rem; margin-bottom: 12px; padding: 8px 12px; background: rgba(59, 130, 246, 0.1); border-radius: 6px; font-weight: 600;">
+                        <span class="material-icons-round" style="font-size: 16px; vertical-align: middle; animation: pulse 1.5s infinite;">mic</span> Listening... Speak your transaction now.
+                    </div>
+
+                    <form id="form-add-tx">
+                        <div class="grid-4 quick-log-grid">
+                            <div class="form-group">
+                                <label>Transaction Date</label>
+                                <input type="date" id="add-date" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Transaction Type</label>
+                                <select id="add-type" class="form-control" required>
+                                    <option value="income">Income</option>
+                                    <option value="expense" selected>Expense</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Category</label>
+                                <select id="add-category" class="form-control" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label>Amount (IDR)</label>
+                                <input type="number" id="add-amount" class="form-control" placeholder="e.g. 150000" required>
+                                <span class="format-helper" id="helper-add-amount"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 10px; margin-bottom: 14px;">
+                            <label>Description (Optional)</label>
+                            <input type="text" id="add-note" class="form-control" placeholder="What was this transaction for?">
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end;">
+                            <button type="submit" id="btn-save-transaction" class="btn-primary">
+                                <span class="material-icons-round" style="font-size: 19px;">save</span>
+                                <span>Save Transaction</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Transaction History Table -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title" style="margin-bottom:0;"><span class="material-icons-round">list_alt</span> Fiat Transactions</h2>
+                        <div class="panel-summary" id="summary-tx">Viewing All Time</div>
+                    </div>
+                    <div class="table-wrapper" style="max-height: 500px; overflow-y: auto;">
+                        <table id="table-all">
+                            <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Note</th><th>Amount</th><th>Action</th></tr></thead>
+                            <tbody id="tbody-fiat-history"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Budget Planner View: Monthly Expense Targets & Progress -->
+            <section id="view-budget" class="view-section">
+                <div class="grid-2" style="align-items: flex-start;">
+                    <div class="panel">
+                        <h2 class="panel-title"><span class="material-icons-round">edit_note</span> Set Monthly Expense Target</h2>
+                        <form id="form-budget" style="margin-bottom: 32px; margin-top: 16px">
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label>Category (Expense Only)</label>
+                                    <select id="bud-cat" class="form-control" required></select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Budget Limit (IDR)</label>
+                                    <input type="number" id="bud-amount" class="form-control" required>
+                                    <span class="format-helper" id="helper-bud-amount"></span>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end;">
+                                <button type="submit" class="btn-primary" style="width: auto; padding: 12px 32px;">Save Target</button>
+                            </div>
+                        </form>
+                        <h3 style="font-size:0.85rem; color:var(--text-muted); margin-bottom:16px; text-transform:uppercase; font-weight:700;">Active Configurations</h3>
+                        <div id="list-budget-plans" style="display:flex; flex-direction:column; gap:12px;"></div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2 class="panel-title" style="margin-bottom:0;"><span class="material-icons-round" style="color:var(--warning);">track_changes</span> Reality vs Target</h2>
+                            <div class="panel-summary" id="summary-budget">Total: Rp 0 / Rp 0</div>
+                        </div>
+                        <div id="budget-progress-container" style="display:flex; flex-direction:column; gap: 24px;"></div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Subscriptions View: Recurring Bills & Fixed Costs -->
+            <section id="view-subscriptions" class="view-section">
+                <div class="grid-3">
+                    <div class="stat-card" style="border-left: 4px solid var(--purple); grid-column: span 1;">
+                        <div class="stat-icon" style="background: var(--purple);"><span class="material-icons-round">event_repeat</span></div>
+                        <div class="stat-info"><h3 title="Estimated Monthly Fixed Cost">Est. Monthly Cost</h3><h2 id="sub-monthly-cost">Rp 0</h2></div>
+                    </div>
+                    <div class="panel" style="grid-column: span 2;">
+                        <h2 class="panel-title"><span class="material-icons-round" style="color:var(--purple);">add_circle</span>  Add Subscription</h2>
+                        <form id="form-add-sub">
+                            <div class="grid-3">
+                                <div class="form-group">
+                                    <label>Service Name</label>
+                                    <input type="text" id="sub-name" class="form-control" placeholder="e.g. Netflix Premium" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Billing Cost (IDR)</label>
+                                    <input type="number" id="sub-price" class="form-control" placeholder="e.g. 186000" required>
+                                    <span class="format-helper" id="helper-sub-price"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label>Billing Cycle</label>
+                                    <select id="sub-cycle" class="form-control" required>
+                                        <option value="monthly">Monthly</option>
+                                        <option value="yearly">Yearly</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end;">
+                                <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, var(--purple), #6366f1); width: auto; padding: 12px 32px;">Save Bill</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title" style="margin-bottom:0;"><span class="material-icons-round">format_list_bulleted</span> Your Fixed Bills</h2>
+                        <div class="panel-summary" id="summary-subs">Active: 0 | Paused: 0</div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>Service Name</th><th>Billing Cost</th><th>Cycle</th><th>Est. Monthly</th><th>Payment & Action</th></tr></thead>
+                            <tbody id="tbody-subs"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Savings Goals View: Long-term Financial Targets -->
+            <section id="view-savings" class="view-section">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title" style="margin-bottom:0;"><span class="material-icons-round" style="color:var(--success);">savings</span> Future Savings Goals</h2>
+                        <div class="panel-summary" id="summary-sav">Total Saved: Rp 0 / Rp 0</div>
+                    </div>
+                    <form id="form-add-saving" style="margin-bottom: 32px;">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label>Goal Name</label>
+                                <input type="text" id="sav-name" class="form-control" placeholder="e.g. Emergency Fund" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Target Amount (IDR)</label>
+                                <input type="number" id="sav-target" class="form-control" placeholder="e.g. 50000000" required>
+                                <span class="format-helper" id="helper-sav-target"></span>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end;">
+                            <button type="submit" class="btn-primary" style="width: auto; padding: 12px 32px;">Create New Goal</button>
+                        </div>
+                    </form>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>Savings Progress</th><th>Action</th></tr></thead>
+                            <tbody id="tbody-savings"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Wishlist View: Future Purchase Planning -->
+            <section id="view-wishlist" class="view-section">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title" style="margin-bottom:0;"><span class="material-icons-round" style="color:var(--info);">shopping_bag</span> Purchase Wishlist Items</h2>
+                        <div class="panel-summary" id="summary-wish">Total Pending: Rp 0</div>
+                    </div>
+                    <form id="form-add-wishlist" style="margin-bottom: 32px;">
+                        <div class="grid-3">
+                            <div class="form-group">
+                                <label>Item Name</label>
+                                <input type="text" id="wish-name" class="form-control" placeholder="e.g. Macbook Pro M3" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Estimated Price (IDR)</label>
+                                <input type="number" id="wish-price" class="form-control" placeholder="e.g. 25000000" required>
+                                <span class="format-helper" id="helper-wish-price"></span>
+                            </div>
+                            <div class="form-group">
+                                <label>Store URL (Optional)</label>
+                                <input type="url" id="wish-link" class="form-control" placeholder="https://amazon.com/...">
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end;">
+                            <button type="submit" class="btn-primary" style="width: auto; padding: 12px 32px;">Add to Wishlist</button>
+                        </div>
+                    </form>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>Item Info & Price</th><th>Reference Link</th><th>Status / Action</th></tr></thead>
+                            <tbody id="tbody-wishlist"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics View: Detailed Category Trends -->
+            <section id="view-analytics" class="view-section">
+                <div class="grid-4" id="analytic-stats"></div>
+                <div class="panel">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
+                        <h2 class="panel-title" style="margin:0;"><span class="material-icons-round" style="color:var(--primary);">timeline</span> Category Detailed Trend (All Time)</h2>
+                        <select id="ana-category" class="form-control" style="width:250px; margin:0;"></select>
+                    </div>
+                    <div class="chart-container"><canvas id="analyticsDetailChart"></canvas></div>
+                </div>
+            </section>
+            
+            <!-- Settings View: Categories, Backup & Cloud Sync -->
+            <section id="view-settings" class="view-section">
+                <div class="grid-3">
+                    <div class="panel">
+                        <h2 class="panel-title"><span class="material-icons-round">shopping_cart</span> Expense Categories</h2>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; margin-bottom: 24px;" id="list-cat-expense"></div>
+                        <form id="form-setting-expense" style="display: flex; gap: 10px; align-items: center; width: 100%; margin-top: auto;">
+                            <div class="form-group" style="margin-bottom: 0; flex: 1 1 auto; width: 100%;">
+                                <input type="text" id="new-cat-expense" class="form-control" placeholder="Add new..." required style="height: 42px; margin: 0;">
+                            </div>
+                            <button type="submit" class="btn-primary" style="flex: 0 0 auto; height: 42px; padding: 0 20px; margin: 0;">Add</button>
+                        </form>
+                    </div>
+                    
+                    <div class="panel">
+                        <h2 class="panel-title"><span class="material-icons-round">payments</span> Income Categories</h2>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; margin-bottom: 24px;" id="list-cat-income"></div>
+                        <form id="form-setting-income" style="display: flex; gap: 10px; align-items: center; width: 100%; margin-top: auto;">
+                            <div class="form-group" style="margin-bottom: 0; flex: 1 1 auto; width: 100%;">
+                                <input type="text" id="new-cat-income" class="form-control" placeholder="Add new..." required style="height: 42px; margin: 0;">
+                            </div>
+                            <button type="submit" class="btn-primary" style="flex: 0 0 auto; height: 42px; padding: 0 20px; margin: 0;">Add</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Backup & Restore Section -->
+                <div class="grid-2">
+                    <div class="panel" style="display: flex; flex-direction: column; justify-content: space-between; background: linear-gradient(135deg, var(--bg-surface), rgba(79, 70, 229, 0.05)); border: 1px solid var(--primary-light);">
+                        <div>
+                            <h2 class="panel-title"><span class="material-icons-round" style="color:var(--primary);margin-right: 12px">settings_backup_restore</span> System Backup & Restore</h2>
+                            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 24px; margin-top: 12px">It is highly recommended to regularly back up (Export) your data. Import your JSON file to restore all previously saved records.</p>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
+                            <button type="button" id="btn-export-json" class="btn-primary" style="width: 100%; justify-content: center; padding: 12px 24px; display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, var(--success), #059669);"><span class="material-icons-round">file_download</span> Export Backup (JSON)</button>
+                            <button type="button" id="btn-trigger-import" class="btn-primary" style="width: 100%; justify-content: center; padding: 12px 24px; display: flex; align-items: center; gap: 8px; background: var(--bg-body); color: var(--text-main); border: 1px solid var(--border); box-shadow: none;"><span class="material-icons-round" style="color: var(--primary);">file_upload</span> Import Backup (JSON)</button>
+                            <input type="file" id="file-import-json" accept=".json" style="display: none;">
+                        </div>
+                    </div>
+
+                    <!-- Danger Zone -->
+                    <div class="panel" style="display: flex; flex-direction: column; justify-content: space-between; border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05); text-align: left;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                                <div style="width: 50px; height: 50px; background: rgba(239,68,68,0.1); color: var(--danger); border-radius: 50%; display: flex; align-items:center; justify-content:center;"><span class="material-icons-round" style="font-size: 28px;">warning</span></div>
+                                <h2 class="panel-title" style="color: var(--danger); margin-bottom: 0;">Danger Zone</h2>
+                            </div>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 24px;">This action will permanently wipe all data (Transactions, Wishlist, etc.) stored in this browser. This cannot be undone without a backup file.</p>
+                        </div>
+                        <button type="button" id="btn-reset-data" class="btn-primary btn-danger" style="width: 100%; justify-content: center;">Wipe System Records</button>
+                    </div>
+
+                    <!-- Cloud Sync Configuration -->
+                    <div class="panel" style="border: 1px solid var(--info); background: rgba(59, 130, 246, 0.05);">
+                        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                            <div style="width: 50px; height: 50px; background: rgba(59, 130, 246, 0.1); color: var(--info); border-radius: 50%; display: flex; align-items:center; justify-content:center;"><span class="material-icons-round" style="font-size: 28px;">cloud_sync</span></div>
+                            <h2 class="panel-title" style="color: var(--info); margin-bottom: 0;">Cloud Sync</h2>
+                        </div>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+                            Use your Personal Access Token (Scope: Gist) and Gist ID to sync data across devices.
+                        </p>
+                        <div class="form-group">
+                            <label>GitHub Personal Access Token</label>
+                            <input type="password" id="gh-token" class="form-control" placeholder="ghp_xxxxxxxxxxxxxxxxx">
+                        </div>
+                        <div class="form-group">
+                            <label>Gist ID</label>
+                            <input type="text" id="gh-gist-id" class="form-control" placeholder="Contoh: 8a4b2c1d9f...">
+                        </div>
+                        <button type="button" id="btn-save-gh" class="btn-primary" style="width: 100%; justify-content: center; background: var(--info);">
+                            Save Cloud Config
+                        </button>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Floating Action Button -->
+            <div class="fab-add" onclick="document.getElementById('modal-container').classList.add('active');">
+                <span class="material-icons-round">add</span>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" aria-live="polite"></div>
+
+    <!-- Application Script -->
+    <script src="script.js?v=108"></script>
+    <script src="voice.js"></script>
+    <script src="report.js"></script>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker Registered!', reg))
+                    .catch(err => console.error('Service Worker Registration Failed!', err));
+            });
+        }
+    </script>
+</body>
+</html>
