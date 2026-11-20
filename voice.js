@@ -1,84 +1,218 @@
-// File: voice.js (Unified Voice & Text AI Parser + Floating '+' Quick Log Shortcut)
+// File: voice.js (Unified Voice & Smart AI Parser + Floating '+' Quick Log Shortcut)
 window.addEventListener('load', function() {
-    const btnVoice = document.getElementById("btn-voice-tx");
-    const voiceFeedback = document.getElementById("voice-feedback");
-    const aiTextInput = document.getElementById("ai-text-input");
-    const btnAiTextSubmit = document.getElementById("btn-ai-text-submit");
+    const btnVoice = document.getElementById("btn-voice-tx") || document.getElementById("dash-btn-voice-tx");
+    const voiceFeedback = document.getElementById("voice-feedback") || document.getElementById("dash-voice-feedback");
+    const aiTextInput = document.getElementById("ai-text-input") || document.getElementById("dash-ai-text-input");
+    const btnAiTextSubmit = document.getElementById("btn-ai-text-submit") || document.getElementById("dash-btn-ai-process");
 
     // --- 1. SINKRONISASI KATEGORI LIVE DARI SYSTEM SETTINGS ---
     function getDynamicCategories(type) {
-        let containerId = type === 'expense' ? 'list-cat-expense' : 'list-cat-income';
-        let container = document.getElementById(containerId);
+        const containerId = type === 'expense' ? 'list-cat-expense' : 'list-cat-income';
+        const container = document.getElementById(containerId);
         let cats = [];
-        
+
         if (container) {
             Array.from(container.children).forEach(child => {
-                let clone = child.cloneNode(true);
+                const clone = child.cloneNode(true);
                 clone.querySelectorAll('.material-icons-round').forEach(i => i.remove());
-                let text = clone.textContent.trim();
+                const text = clone.textContent.trim();
                 if (text) cats.push(text);
             });
         }
-        
+
         if (cats.length === 0) {
-            const mainSelect = document.getElementById('add-category');
+            const mainSelect = document.getElementById('add-category') || document.getElementById('dash-add-category');
             if (mainSelect) cats = Array.from(mainSelect.options).map(o => o.value);
         }
-        
+
         return cats.length > 0 ? cats : ["Other"];
     }
 
-    // --- 2. MESIN NLP (NATURAL LANGUAGE PARSER) ---
-    function parseNLPData(text) {
-        const textLower = text.toLowerCase();
-        let amount = "";
-        let type = "expense"; 
-        let date = document.getElementById("add-date")?.value || new Date().toISOString().split('T')[0];
-        let note = ""; 
+    // Helper: Tanggal relatif (YYYY-MM-DD)
+    function getOffsetDate(daysOffset = 0) {
+        const d = new Date();
+        d.setDate(d.getDate() + daysOffset);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
 
-        const amtRegex = /(?:rp\s*)?(\d+(?:[\.,]\d+)?)(?:\s*\b(ribu|rb|k|juta|jt)\b)?/i;
-        const match = textLower.match(amtRegex);
-        if (match) {
-            let rawNum = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
-            let multiplier = match[2];
-            if (multiplier && ['ribu', 'rb', 'k'].includes(multiplier)) rawNum *= 1000;
-            if (multiplier && ['juta', 'jt'].includes(multiplier)) rawNum *= 1000000;
-            amount = rawNum;
+    // Helper: Konversi angka terbilang Bahasa Indonesia ("satu juta", "tiga ratus ribu", "25ribu", dll.)
+    function parseIndonesianAmount(textLower) {
+        // 1. Cek pola angka + satuan (contoh: "23 ribu", "25ribu", "1,5 juta", "50k", "rp 35.000")
+        const digitMatch = textLower.match(/(?:rp\.?\s*)?(\d+(?:[.,]\d+)?)\s*(ribu|rb|k|juta|jt|m)?\b/i);
+        if (digitMatch) {
+            let rawStr = digitMatch[1];
+            const unit = (digitMatch[2] || '').toLowerCase();
+
+            // Jika format ribuan pakai titik seperti 50.000 tanpa satuan
+            if (!unit && /^\d{1,3}(\.\d{3})+$/.test(rawStr)) {
+                return parseInt(rawStr.replace(/\./g, ''), 10);
+            }
+
+            let num = parseFloat(rawStr.replace(/\./g, '').replace(',', '.'));
+            if (['ribu', 'rb', 'k'].includes(unit)) num *= 1000;
+            else if (['juta', 'jt', 'm'].includes(unit)) num *= 1000000;
+            if (!isNaN(num) && num > 0) return Math.round(num);
         }
 
-        if (textLower.match(/(gaji|gajian|terima|dapat|masuk|bonus|income|pemasukan)/)) {
+        // 2. Cek pola angka terbilang penuh (contoh: "satu juta", "tiga ratus ribu", "dua puluh lima ribu")
+        const wordNums = {
+            'se': 1, 'satu': 1, 'dua': 2, 'tiga': 3, 'empat': 4, 'lima': 5,
+            'enam': 6, 'tujuh': 7, 'delapan': 8, 'sembilan': 9, 'sepuluh': 10,
+            'sebelas': 11, 'setengah': 0.5
+        };
+
+        let total = 0;
+        let current = 0;
+        let foundWordNumber = false;
+
+        // Tangani awalan "se-" seperti "seribu", "seratus", "sejuta"
+        const normalizedWords = textLower
+            .replace(/\bsejuta\b/g, 'satu juta')
+            .replace(/\bseratus\b/g, 'satu ratus')
+            .replace(/\bseribu\b/g, 'satu ribu')
+            .split(/[\s,.-]+/);
+
+        for (const w of normalizedWords) {
+            if (wordNums[w] !== undefined) {
+                current += wordNums[w];
+                foundWordNumber = true;
+            } else if (w === 'belas') {
+                current = (current || 1) + 10;
+                foundWordNumber = true;
+            } else if (w === 'puluh') {
+                current = (current || 1) * 10;
+                foundWordNumber = true;
+            } else if (w === 'ratus') {
+                current = (current || 1) * 100;
+                foundWordNumber = true;
+            } else if (w === 'ribu' || w === 'rb') {
+                total += (current || 1) * 1000;
+                current = 0;
+                foundWordNumber = true;
+            } else if (w === 'juta' || w === 'jt') {
+                total += (current || 1) * 1000000;
+                current = 0;
+                foundWordNumber = true;
+            }
+        }
+        total += current;
+        return foundWordNumber && total > 0 ? Math.round(total) : "";
+    }
+
+    // Helper: Ekstrak tanggal dari ucapan ("Tanggal 25 agusust 2025", "kemarin", "kemarin lusa")
+    function parseIndonesianDate(textLower) {
+        if (textLower.includes('kemarin lusa') || textLower.includes('2 hari lalu')) {
+            return getOffsetDate(-2);
+        }
+        if (textLower.includes('kemarin')) {
+            return getOffsetDate(-1);
+        }
+
+        const months = {
+            'januari': '01', 'jan': '01',
+            'februari': '02', 'pebruari': '02', 'feb': '02',
+            'maret': '03', 'mar': '03',
+            'april': '04', 'apr': '04',
+            'mei': '05',
+            'juni': '06', 'jun': '06',
+            'juli': '07', 'jul': '07',
+            'agustus': '08', 'agusust': '08', 'agust': '08', 'agu': '08', 'ags': '08',
+            'september': '09', 'sep': '09', 'sept': '09',
+            'oktober': '10', 'okt': '10',
+            'november': '11', 'nopember': '11', 'nov': '11',
+            'desember': '12', 'des': '12'
+        };
+
+        const datePattern = /(?:tanggal\s+)?(\d{1,2})\s+([a-z]+)(?:\s+(\d{4}))?/i;
+        const match = textLower.match(datePattern);
+        if (match && months[match[2]]) {
+            const day = match[1].padStart(2, '0');
+            const month = months[match[2]];
+            const year = match[3] || String(new Date().getFullYear());
+            return `${year}-${month}-${day}`;
+        }
+
+        return document.getElementById("add-date")?.value || document.getElementById("dash-add-date")?.value || getOffsetDate(0);
+    }
+
+    // Helper: Ekstrak catatan/deskripsi otomatis (DIJAMIN TIDAK PERNAH KOSONG)
+    function extractAutoNote(originalText, category) {
+        // 1. Jika pengguna secara eksplisit menyebut kata "catatan ..." atau "note ..."
+        const explicitNote = originalText.match(/(?:catatan|note)\s+(.+)/i);
+        if (explicitNote && explicitNote[1].trim()) {
+            const raw = explicitNote[1].trim();
+            return raw.charAt(0).toUpperCase() + raw.slice(1);
+        }
+
+        // 2. Bersihkan frasa tanggal, kata pengantar pembelian, dan nominal uang
+        let cleaned = originalText
+            .replace(/^(?:pada\s+)?(?:tanggal\s+)?\d{1,2}\s+[a-z]+(?:\s+\d{4})?\s*/i, '')
+            .replace(/^(?:kemarin\s+lusa|kemarin|tadi\s+pagi|tadi\s+siang|tadi\s+malam|tadi|barusan|hari\s+ini)\s*/i, '')
+            .replace(/\b(?:saya|aku|gue|gw|mau|habis|baru\s+saja|barusan|sudah|udah|telah)\b/gi, ' ')
+            .replace(/\b(?:membeli|beli|membayar|bayar|pesan|pesen|order|belanja)\b/gi, ' ')
+            .replace(/\b(?:dengan\s+harga|seharga|harganya|harga|sebesar|senilai|total|rp\.?|rupiah)\b/gi, ' ')
+            .replace(/\b\d+(?:[.,]\d+)?\s*(?:ribu|rb|k|juta|jt|m)?\b/gi, ' ')
+            .replace(/\b(?:sejuta|seribu|seratus|satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh|sebelas|belas|puluh|ratus|ribu|juta|setengah)\b/gi, ' ')
+            .replace(/\bminjem\b/gi, 'pinjem')
+            .replace(/[,.;:!?]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        // Normalisasi spesifik sesuai kebiasaan transaksi pengguna
+        cleaned = cleaned
+            .replace(/\bdi\s+family\s*mart\b/gi, 'familymart')
+            .replace(/\bfamily\s*mart\b/gi, 'familymart')
+            .replace(/^(?:di|ke|untuk|buat)\s+/i, '')
+            .trim();
+
+        if (!cleaned || cleaned.length < 2) {
+            return `${category} Transaction`;
+        }
+
+        return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+    }
+
+    // --- 2. MESIN NLP LOKAL PINTAR (DILATIH DARI HISTORI TRANSAKSI) ---
+    function parseNLPData(text) {
+        const textLower = text.toLowerCase();
+        const amount = parseIndonesianAmount(textLower);
+        const date = parseIndonesianDate(textLower);
+        let type = "expense";
+
+        if (textLower.match(/\b(gaji|gajian|terima|dapat|masuk|bonus|thr|income|pemasukan)\b/)) {
             type = "income";
         }
 
-        const noteMatch = textLower.match(/(?:catatan|note)\s+(.*)/);
-        if (noteMatch) {
-            let rawNote = noteMatch[1].trim();
-            note = rawNote.charAt(0).toUpperCase() + rawNote.slice(1);
-        }
+        const activeCats = getDynamicCategories(type);
+        let category = activeCats[0];
 
-        let activeCats = getDynamicCategories(type);
-        let category = activeCats[0]; 
+        // Pemetaan kata kunci sesuai histori transaksi Anda
+        const keywordMap = [
+            { words: ['kopi', 'coffe', 'coffee', 'ksk', 'family mart', 'familymart', 'fm', 'barokah coffe', 'kafe'], cat: 'Coffe' },
+            { words: ['ayam', 'nasi', 'makan', 'minum', 'roti', 'jajan', 'soto', 'bakso', 'gofood', 'shopeefood', 'rujak', 'bebek', 'gacoan', 'seblak', 'kebab', 'sempol', 'mie', 'sarapan', 'alfagift', 'katsu'], cat: 'Food' },
+            { words: ['parfum', 'perfuem', 'liquid', 'coil', 'rokok', 'marlong', 'buff', 'manset', 'belanja', 'baju', 'sepatu', 'tas', 'indomaret', 'alfamart', 'alfamidi', 'pasar', 'shopee', 'tokopedia', 'domain'], cat: 'Shopping' },
+            { words: ['wa nana', 'nana', 'minjem', 'pinjem', 'keluarga', 'ibu', 'bapak', 'ortu', 'adik', 'adek', 'syifa', 'tf ibu', 'transfer bapak'], cat: 'Family' },
+            { words: ['bensin', 'gojek', 'gocar', 'grab', 'indrive', 'in drive', 'ojol', 'gosend', 'parkir', 'tol', 'angkot', 'kereta', 'pesawat', 'ongkos'], cat: 'Transport' },
+            { words: ['kos', 'kosan', 'kost', 'kontrakan', 'sewa', 'listrik', 'token'], cat: 'Rent' },
+            { words: ['laundry', 'galon', 'cukur', 'obat', 'sembako', 'wifi', 'air', 'pdam', 'pulsa', 'kuota', 'paket data', 'netflix', 'youtube'], cat: 'Utility' },
+            { words: ['pacar', 'nonton', 'kencan', 'bioskop', 'shamrock', 'lodging', 'richeese', 'sour sally', 'ruka', 'fieris'], cat: 'Dating' },
+            { words: ['sedekah', 'shodaqoh', 'zakat', 'infaq', 'amal', 'donasi', 'kerja bhakti'], cat: 'Other' },
+            { words: ['saham', 'investasi', 'reksadana', 'crypto'], cat: 'Investment' },
+            { words: ['nabung', 'tabungan', 'simpan'], cat: 'Savings' },
+            { words: ['bonus', 'thr'], cat: 'Bonus' },
+            { words: ['gaji', 'gajian'], cat: 'Salary' }
+        ];
 
-        const keywordMap = {
-            'ayam': 'Food', 'nasi': 'Food', 'makan': 'Food', 'minum': 'Food', 'kopi': 'Coffe', 'roti': 'Food', 'jajan': 'Food', 'soto': 'Food', 'bakso': 'Food', 'kafe': 'Coffe', 'gofood': 'Food',
-            'bensin': 'Transport', 'gojek': 'Transport', 'grab': 'Transport', 'parkir': 'Transport', 'tol': 'Transport', 'angkot': 'Transport', 'kereta': 'Transport', 'pesawat': 'Transport',
-            'kos': 'Rent', 'kontrakan': 'Rent', 'sewa': 'Rent',
-            'belanja': 'Shopping', 'baju': 'Shopping', 'sepatu': 'Shopping', 'tas': 'Shopping', 'indomaret': 'Shopping', 'alfamart': 'Shopping', 'pasar': 'Shopping', 'shopee': 'Shopping', 'tokopedia': 'Shopping',
-            'saham': 'Investment', 'investasi': 'Investment', 'reksadana': 'Investment', 'crypto': 'Investment',
-            'nabung': 'Savings', 'tabungan': 'Savings', 'simpan': 'Savings',
-            'keluarga': 'Family', 'ibu': 'Family', 'bapak': 'Family', 'ortu': 'Family', 'adik': 'Family',
-            'pacar': 'Dating', 'nonton': 'Dating', 'kencan': 'Dating', 'bioskop': 'Dating',
-            'listrik': 'Utility', 'wifi': 'Utility', 'air': 'Utility', 'pdam': 'Utility', 'pulsa': 'Utility', 'kuota': 'Utility', 'paket data': 'Utility',
-            'sedekah': 'Shodaqoh', 'zakat': 'Shodaqoh', 'infaq': 'Shodaqoh', 'amal': 'Shodaqoh', 'donasi': 'Shodaqoh'
-        };
-
-        let exactMatch = activeCats.find(c => textLower.includes(c.toLowerCase()));
+        const exactMatch = activeCats.find(c => textLower.includes(c.toLowerCase()));
         if (exactMatch) {
             category = exactMatch;
         } else {
-            for (const [kw, mappedCat] of Object.entries(keywordMap)) {
-                if (textLower.includes(kw)) {
-                    let foundInSettings = activeCats.find(c => c.toLowerCase() === mappedCat.toLowerCase());
+            for (const entry of keywordMap) {
+                if (entry.words.some(kw => textLower.includes(kw))) {
+                    const foundInSettings = activeCats.find(c => c.toLowerCase() === entry.cat.toLowerCase());
                     if (foundInSettings) {
                         category = foundInSettings;
                         break;
@@ -87,7 +221,39 @@ window.addEventListener('load', function() {
             }
         }
 
+        const note = extractAutoNote(text, category);
         return { amount, type, category, date, note };
+    }
+
+    // --- 2B. HYBRID AI PARSER (GEMINI AI + INSTANT LOCAL FALLBACK) ---
+    async function parseSmartAI(text) {
+        const localResult = parseNLPData(text);
+
+        // Jika SmartAI di script.js tersedia, gunakan untuk akurasi kontekstual tambahan
+        if (typeof SmartAI !== 'undefined' && typeof SmartAI.parse === 'function') {
+            try {
+                const aiResult = await SmartAI.parse(text);
+                if (aiResult && aiResult.amount > 0) {
+                    const activeCats = getDynamicCategories(aiResult.type || localResult.type);
+                    const matchedCat = activeCats.find(c => c.toLowerCase() === (aiResult.category || '').toLowerCase()) || localResult.category;
+                    const finalNote = (aiResult.note && aiResult.note.trim() && aiResult.note.trim() !== '-')
+                        ? aiResult.note.trim()
+                        : localResult.note;
+
+                    return {
+                        date: aiResult.date || localResult.date,
+                        type: aiResult.type || localResult.type,
+                        category: matchedCat,
+                        amount: aiResult.amount || localResult.amount,
+                        note: finalNote
+                    };
+                }
+            } catch (e) {
+                console.warn("Fallback ke NLP lokal:", e);
+            }
+        }
+
+        return localResult;
     }
 
     // --- 3. HELPER SPEECH RECOGNITION REUSABLE ---
@@ -114,6 +280,7 @@ window.addEventListener('load', function() {
             }
             if (statusEl) {
                 statusEl.style.display = "block";
+                statusEl.style.color = "var(--info)";
                 statusEl.innerHTML = '<span class="material-icons-round" style="font-size: 16px; vertical-align: middle; animation: pulse 1.5s infinite;">mic</span> Listening... Silakan ucapkan transaksi Anda.';
             }
         };
@@ -122,13 +289,14 @@ window.addEventListener('load', function() {
             const transcript = event.results[0][0].transcript;
             if (statusEl) {
                 statusEl.innerHTML = `<strong>Terdeteksi:</strong> "${transcript}"`;
-                setTimeout(() => { statusEl.style.display = "none"; }, 3500);
             }
             onResultCallback(transcript);
         };
 
         recognition.onerror = (event) => {
-            let errorMsg = event.error === 'not-allowed' ? "Izin mikrofon ditolak." : (event.error === 'no-speech' ? "Suara tidak terdeteksi." : event.error);
+            const errorMsg = event.error === 'not-allowed'
+                ? "Izin mikrofon ditolak."
+                : (event.error === 'no-speech' ? "Suara tidak terdeteksi." : event.error);
             if (statusEl) {
                 statusEl.style.display = "block";
                 statusEl.innerHTML = `<span style="color:var(--danger)">⚠️ ${errorMsg}</span>`;
@@ -155,7 +323,7 @@ window.addEventListener('load', function() {
         const modalContainer = document.getElementById("modal-container");
         if (!modalContainer) return;
 
-        const defaultDate = prefill?.date || document.getElementById("add-date")?.value || new Date().toISOString().split('T')[0];
+        const defaultDate = prefill?.date || document.getElementById("add-date")?.value || document.getElementById("dash-add-date")?.value || getOffsetDate(0);
         const defaultType = prefill?.type || "expense";
         const defaultAmount = prefill?.amount || "";
         const defaultNote = prefill?.note || "";
@@ -163,7 +331,7 @@ window.addEventListener('load', function() {
 
         function renderOptions(selectedType, selectedCat) {
             const cats = getDynamicCategories(selectedType);
-            return cats.map(c => `<option value="${c}" ${c === selectedCat ? 'selected' : ''}>${c}</option>`).join('');
+            return cats.map(c => `<option value="${c}" ${c.toLowerCase() === (selectedCat || '').toLowerCase() ? 'selected' : ''}>${c}</option>`).join('');
         }
 
         document.getElementById("modal-title").innerHTML = isFromAI
@@ -172,17 +340,17 @@ window.addEventListener('load', function() {
 
         document.getElementById("modal-body").innerHTML = `
             <!-- AI Smart Parser di dalam Shortcut Modal -->
-            <div class="form-group" style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border);">
-                <label style="display: flex !important; align-items: center !important; gap: 6px; font-size: 0.8rem; line-height: 1.2; margin-bottom: 4px;">
+            <div class="form-group" style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
+                <label style="display: flex !important; align-items: center !important; gap: 6px; font-size: 0.82rem; line-height: 1.2; margin-bottom: 6px;">
                     <span class="material-icons-round" style="font-size: 16px; line-height: 1; color: var(--primary); display: inline-flex; align-items: center;">auto_awesome</span>
                     <span>AI Quick Fill (Type or Voice)</span>
                 </label>
-                <div style="display: flex; gap: 8px; align-items: stretch;">
-                    <input type="text" id="modal-ai-input" class="form-control" placeholder="e.g. 'Lunch 35k office note'..." style="flex: 1; margin: 0;">
-                    <button type="button" id="btn-modal-ai-parse" class="btn-primary" style="width: 46px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" title="Parse Text">
-                        <span class="material-icons-round" style="font-size: 18px;">auto_awesome</span>
+                <div style="display: flex; flex-direction: row; flex-wrap: nowrap; gap: 8px; align-items: center; width: 100%;">
+                    <input type="text" id="modal-ai-input" class="form-control" placeholder="e.g. 'Beli kopi family mart 25rb'..." style="flex: 1 1 auto; min-width: 0; margin: 0; height: 42px;">
+                    <button type="button" id="btn-modal-ai-parse" class="btn-primary" style="flex: 0 0 48px; width: 48px; min-width: 48px; max-width: 48px; height: 42px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" title="Parse Text">
+                        <span class="material-icons-round" style="font-size: 20px;">auto_awesome</span>
                     </button>
-                    <button type="button" id="btn-modal-ai-mic" style="background: var(--bg-body, rgba(255,255,255,0.04)); border: 1px solid var(--border); color: var(--text-main); border-radius: 8px; width: 46px; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" title="Voice Input">
+                    <button type="button" id="btn-modal-ai-mic" style="flex: 0 0 48px; width: 48px; min-width: 48px; max-width: 48px; height: 42px; background: var(--bg-body, rgba(255,255,255,0.04)); border: 1px solid var(--border); color: var(--text-main); border-radius: 10px; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" title="Voice Input">
                         <span class="material-icons-round" style="font-size: 20px;">mic</span>
                     </button>
                 </div>
@@ -190,13 +358,13 @@ window.addEventListener('load', function() {
             </div>
 
             <!-- Form Transaksi Utama -->
-            <div class="grid-2" style="margin-bottom: 12px;">
-                <div class="form-group" style="margin: 0;">
-                    <label>Date</label>
+            <div class="grid-2" style="margin-bottom: 14px; gap: 12px;">
+                <div class="form-group" style="margin: 0; display: flex; flex-direction: column; gap: 6px;">
+                    <label style="margin: 0;">Date</label>
                     <input type="date" id="voice-date" class="form-control" value="${defaultDate}" required>
                 </div>
-                <div class="form-group" style="margin: 0;">
-                    <label>Type</label>
+                <div class="form-group" style="margin: 0; display: flex; flex-direction: column; gap: 6px;">
+                    <label style="margin: 0;">Type</label>
                     <select id="voice-type" class="form-control">
                         <option value="income" ${defaultType === 'income' ? 'selected' : ''}>Income</option>
                         <option value="expense" ${defaultType === 'expense' ? 'selected' : ''}>Expense</option>
@@ -204,21 +372,21 @@ window.addEventListener('load', function() {
                 </div>
             </div>
 
-            <div class="grid-2" style="margin-bottom: 12px;">
-                <div class="form-group" style="margin: 0;">
-                    <label>Category</label>
+            <div class="grid-2" style="margin-bottom: 14px; gap: 12px;">
+                <div class="form-group" style="margin: 0; display: flex; flex-direction: column; gap: 6px;">
+                    <label style="margin: 0;">Category</label>
                     <select id="voice-category" class="form-control">
                         ${renderOptions(defaultType, defaultCategory)}
                     </select>
                 </div>
-                <div class="form-group" style="margin: 0;">
-                    <label>Amount (IDR)</label>
+                <div class="form-group" style="margin: 0; display: flex; flex-direction: column; gap: 6px;">
+                    <label style="margin: 0;">Amount (IDR)</label>
                     <input type="number" id="voice-amount" class="form-control" placeholder="e.g. 50000" value="${defaultAmount}" required>
                 </div>
             </div>
 
-            <div class="form-group" style="margin: 0;">
-                <label>Description (Optional)</label>
+            <div class="form-group" style="margin: 0; display: flex; flex-direction: column; gap: 6px;">
+                <label style="margin: 0;">Description (Optional)</label>
                 <input type="text" id="voice-note" class="form-control" placeholder="What was this transaction for?" value="${defaultNote}">
             </div>
         `;
@@ -232,24 +400,38 @@ window.addEventListener('load', function() {
 
         modalContainer.classList.add("active");
 
-        // Helper untuk mengisi field di dalam modal dari hasil AI
-        function applyAIParsedToModal(rawText) {
-            const parsed = parseNLPData(rawText);
+        // Helper untuk mengisi seluruh field di dalam modal (termasuk Date & Description)
+        async function applyAIParsedToModal(rawText) {
+            const statusEl = document.getElementById("modal-ai-status");
+            const parseBtn = document.getElementById("btn-modal-ai-parse");
+            if (parseBtn) parseBtn.disabled = true;
+            if (statusEl) {
+                statusEl.style.display = "block";
+                statusEl.style.color = "var(--info)";
+                statusEl.innerHTML = "⏳ Memproses transaksi...";
+            }
+
+            const parsed = await parseSmartAI(rawText);
+            if (parseBtn) parseBtn.disabled = false;
+
+            const dateEl = document.getElementById("voice-date");
             const typeEl = document.getElementById("voice-type");
             const catEl = document.getElementById("voice-category");
             const amtEl = document.getElementById("voice-amount");
             const noteEl = document.getElementById("voice-note");
-            const statusEl = document.getElementById("modal-ai-status");
 
-            typeEl.value = parsed.type;
-            catEl.innerHTML = renderOptions(parsed.type, parsed.category);
-            if (parsed.amount) amtEl.value = parsed.amount;
-            if (parsed.note) noteEl.value = parsed.note;
+            if (dateEl && parsed.date) dateEl.value = parsed.date;
+            if (typeEl) typeEl.value = parsed.type;
+            if (catEl) catEl.innerHTML = renderOptions(parsed.type, parsed.category);
+            if (amtEl && parsed.amount) amtEl.value = parsed.amount;
+            if (noteEl) {
+                noteEl.value = parsed.note || extractAutoNote(rawText, parsed.category);
+            }
 
             if (statusEl) {
                 statusEl.style.display = "block";
                 statusEl.style.color = "var(--success, #10b981)";
-                statusEl.innerHTML = "✓ AI berhasil mengisi form di bawah. Silakan periksa & simpan.";
+                statusEl.innerHTML = `✓ Terisi: ${noteEl.value} (${parsed.category})`;
             }
         }
 
@@ -260,10 +442,11 @@ window.addEventListener('load', function() {
         const modalStatus = document.getElementById("modal-ai-status");
 
         if (modalAiBtn && modalAiInput) {
-            modalAiBtn.onclick = () => {
+            modalAiBtn.onclick = async () => {
                 if (!modalAiInput.value.trim()) return modalAiInput.focus();
-                applyAIParsedToModal(modalAiInput.value.trim());
+                const txt = modalAiInput.value.trim();
                 modalAiInput.value = "";
+                await applyAIParsedToModal(txt);
             };
             modalAiInput.onkeydown = (e) => {
                 if (e.key === "Enter") {
@@ -275,8 +458,10 @@ window.addEventListener('load', function() {
 
         if (modalMicBtn) {
             modalMicBtn.onclick = () => {
-                startSpeechRecognition((transcript) => {
-                    applyAIParsedToModal(transcript);
+                startSpeechRecognition(async (transcript) => {
+                    if (modalAiInput) modalAiInput.value = transcript;
+                    await applyAIParsedToModal(transcript);
+                    if (modalAiInput) modalAiInput.value = "";
                 }, modalStatus, modalMicBtn);
             };
         }
@@ -286,35 +471,49 @@ window.addEventListener('load', function() {
             document.getElementById("voice-category").innerHTML = renderOptions(e.target.value, '');
         });
 
-        // Simpan Transaksi
+        // Simpan Transaksi (mendukung ID lama #add-* maupun ID baru #dash-add-*)
         document.getElementById("btn-confirm-voice").onclick = () => {
             const finalAmount = document.getElementById("voice-amount").value;
             if (!finalAmount || Number(finalAmount) <= 0) return alert("Please enter a valid amount.");
 
-            document.getElementById("add-amount").value = finalAmount;
-            const typeSelect = document.getElementById("add-type");
-            typeSelect.value = document.getElementById("voice-type").value;
-            typeSelect.dispatchEvent(new Event('change')); 
-            
-            document.getElementById("add-category").value = document.getElementById("voice-category").value;
-            document.getElementById("add-note").value = document.getElementById("voice-note").value;
-            document.getElementById("add-date").value = document.getElementById("voice-date").value;
-            
-            document.getElementById("form-add-tx").dispatchEvent(new Event('submit'));
-            
+            const finalType = document.getElementById("voice-type").value;
+            const finalCat = document.getElementById("voice-category").value;
+            const finalNote = document.getElementById("voice-note").value.trim() || `${finalCat} Transaction`;
+            const finalDate = document.getElementById("voice-date").value;
+
+            const amtTarget = document.getElementById("add-amount") || document.getElementById("dash-add-amount");
+            const typeTarget = document.getElementById("add-type") || document.getElementById("dash-add-type");
+            const catTarget = document.getElementById("add-category") || document.getElementById("dash-add-category");
+            const noteTarget = document.getElementById("add-note") || document.getElementById("dash-add-note");
+            const dateTarget = document.getElementById("add-date") || document.getElementById("dash-add-date");
+            const formTarget = document.getElementById("form-add-tx") || document.getElementById("form-dash-add-tx");
+
+            if (amtTarget) amtTarget.value = finalAmount;
+            if (typeTarget) {
+                typeTarget.value = finalType;
+                typeTarget.dispatchEvent(new Event('change'));
+            }
+            if (catTarget) catTarget.value = finalCat;
+            if (noteTarget) noteTarget.value = finalNote;
+            if (dateTarget) dateTarget.value = finalDate;
+
+            if (formTarget) {
+                formTarget.dispatchEvent(new Event('submit'));
+            }
+
             modalContainer.classList.remove("active");
-            document.getElementById("add-note").value = "";
+            if (noteTarget) noteTarget.value = "";
         };
     }
 
-    // --- 5. HUBUNGKAN AI INPUT DI DASHBOARD ---
-    function handleDashboardTextSubmit() {
+    // --- 5. HUBUNGKAN AI INPUT & VOICE DI DASHBOARD ---
+    async function handleDashboardTextSubmit() {
         if (!aiTextInput) return;
         const rawText = aiTextInput.value.trim();
         if (!rawText) return aiTextInput.focus();
-        const parsed = parseNLPData(rawText);
-        openQuickLogModal(parsed, true);
         aiTextInput.value = "";
+        const parsed = await parseSmartAI(rawText);
+        openQuickLogModal(parsed, true);
     }
 
     if (btnAiTextSubmit) btnAiTextSubmit.addEventListener("click", handleDashboardTextSubmit);
@@ -329,14 +528,14 @@ window.addEventListener('load', function() {
 
     if (btnVoice) {
         btnVoice.addEventListener("click", () => {
-            startSpeechRecognition((transcript) => {
-                const parsed = parseNLPData(transcript);
+            startSpeechRecognition(async (transcript) => {
+                const parsed = await parseSmartAI(transcript);
                 openQuickLogModal(parsed, true);
             }, voiceFeedback, btnVoice);
         });
     }
 
-// --- 6. UNIFIED FLOATING PROFILE + '+' HORIZONTAL SPEED DIAL (ANDROID MODE) ---
+    // --- 6. UNIFIED FLOATING PROFILE + '+' HORIZONTAL SPEED DIAL (ANDROID MODE) ---
     (function setupAndroidHorizontalDial() {
         const styleEl = document.createElement("style");
         styleEl.textContent = `
@@ -361,11 +560,10 @@ window.addEventListener('load', function() {
                 }
             }
 
-            /* Kontainer 4 Tombol ke Samping Kiri */
             #vault-side-dial-bar {
                 position: fixed;
                 display: flex;
-                flex-direction: row-reverse; /* Keluar berurutan dari kanan (foto) ke kiri */
+                flex-direction: row-reverse;
                 align-items: center;
                 gap: 10px;
                 z-index: 9994;
@@ -394,7 +592,6 @@ window.addEventListener('load', function() {
                 transform: scale(0.9) !important;
             }
 
-            /* Animasi keluar bertahap (staggered) ke samping kiri */
             #vault-side-dial-bar.open .vsd-circle-btn {
                 opacity: 1;
                 transform: translateX(0) scale(1);
@@ -404,7 +601,6 @@ window.addEventListener('load', function() {
             #vault-side-dial-bar.open .vsd-circle-btn:nth-child(3) { transition-delay: 0.10s; }
             #vault-side-dial-bar.open .vsd-circle-btn:nth-child(4) { transition-delay: 0.14s; }
 
-            /* Animasi masuk kembali ke belakang foto profil */
             #vault-side-dial-bar:not(.open) .vsd-circle-btn:nth-child(1) { transition-delay: 0.09s; }
             #vault-side-dial-bar:not(.open) .vsd-circle-btn:nth-child(2) { transition-delay: 0.06s; }
             #vault-side-dial-bar:not(.open) .vsd-circle-btn:nth-child(3) { transition-delay: 0.03s; }
@@ -418,7 +614,6 @@ window.addEventListener('load', function() {
         `;
         document.head.appendChild(styleEl);
 
-        // Buat 4 tombol meluncur ke kiri (tanpa kotak popup besar)
         const dialBar = document.createElement("div");
         dialBar.id = "vault-side-dial-bar";
         dialBar.innerHTML = `
@@ -443,8 +638,8 @@ window.addEventListener('load', function() {
         function positionDialBar() {
             if (!activeFabEl || window.innerWidth > 768) return;
             const rect = activeFabEl.getBoundingClientRect();
-            const centerY = rect.top + (rect.height / 2) - 23; // Sejajar vertikal tengah dengan foto profil
-            const rightOffset = window.innerWidth - rect.left + 12; // Muncul tepat di sebelah kiri foto profil
+            const centerY = rect.top + (rect.height / 2) - 23;
+            const rightOffset = window.innerWidth - rect.left + 12;
             dialBar.style.top = `${centerY}px`;
             dialBar.style.right = `${rightOffset}px`;
         }
@@ -465,7 +660,6 @@ window.addEventListener('load', function() {
             }
         }
 
-        // Hubungkan aksi ke-4 tombol bulat
         document.getElementById("vsd-btn-quicklog")?.addEventListener("click", (e) => {
             e.stopPropagation();
             setDialState(false);
@@ -487,14 +681,12 @@ window.addEventListener('load', function() {
             setDialState(false);
         });
 
-        // Tutup otomatis jika mengetuk area luar
         document.addEventListener("click", (e) => {
             if (isDialOpen && !dialBar.contains(e.target) && (!activeFabEl || !activeFabEl.contains(e.target))) {
                 setDialState(false);
             }
         });
 
-        // Transformasi tombol '+' menjadi Profil Krisna + Badge '+' di Android
         function syncFabWithProfile() {
             const candidates = Array.from(document.querySelectorAll("button, a, div"));
             const fab = candidates.find(el => {
@@ -529,7 +721,6 @@ window.addEventListener('load', function() {
         syncFabWithProfile();
         window.addEventListener("resize", syncFabWithProfile);
 
-        // Tangkap klik tombol '+' (Android toggle 4 tombol ke samping kiri, Desktop buka QuickLog Modal)
         document.addEventListener("click", function(e) {
             const targetEl = e.target.closest("button, a, [role='button'], [class*='fab'], [id*='fab'], .vault-fab-profile-hub");
             const clickedIcon = e.target.closest(".material-icons-round");
@@ -560,7 +751,6 @@ window.addEventListener('load', function() {
             }
         }, true);
 
-        // Pengaman otomatis jika modal placeholder terbuka
         const modalContainerEl = document.getElementById("modal-container");
         if (modalContainerEl) {
             const modalObserver = new MutationObserver(() => {
