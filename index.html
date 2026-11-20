@@ -74,6 +74,7 @@
                     <span class="material-icons-round">savings</span>
                     <span>Savings</span>
                 </a>
+                
                 <a href="#view-wishlist" class="nav-link" data-target="view-wishlist" data-title="Purchase Wishlist">
                     <span class="material-icons-round">shopping_bag</span>
                     <span>Wishlist</span>
@@ -113,7 +114,7 @@
                 <div class="header-actions">
                     <div class="bottom-sheet-overlay" id="sheet-overlay"></div>
                     
-                    <!-- Time Filter (Diperlebar & Proporsional) -->
+                    <!-- Time Filter -->
                     <div class="time-machine-group">
                         <span class="material-icons-round" style="color:var(--primary); font-size:22px;">calendar_month</span>
                         <select id="filter-mode" class="time-select" title="Filter Mode" style="font-weight: 700; color: var(--primary);">
@@ -145,25 +146,22 @@
                         </div>
                     </div>
 
-                    <!-- User Controls (CSV Biru, PDF Merah Ikon Putih, Theme, Profil) -->
+                    <!-- User Controls -->
                     <div class="hover-menu-wrapper">
                         <div class="main-circle profile-avatar header-avatar-mobile">
                             <img src="assets/krisna.png" alt="Foto Profil" onerror="this.src='https://ui-avatars.com/api/?name=Krisna&background=4f46e5&color=fff'">
                         </div>
                         
                         <div class="submenu-container">                        
-                            <!-- Tombol CSV (Biru) -->
                             <button type="button" class="btn-icon sub-circle csv-btn" id="btn-export-csv" title="Export CSV">
                                 <span class="material-icons-round">download</span>
                                 <span class="csv-text">CSV</span>
                             </button>
 
-                            <!-- Tombol PDF (Merah Solid, Ikon Putih, Tanpa Teks) -->
                             <button type="button" class="btn-icon sub-circle pdf-btn" id="btn-export-pdf" title="Export PDF Report">
                                 <span class="material-icons-round">picture_as_pdf</span>
                             </button>
 
-                            <!-- Tombol Tema Global Aplikasi -->
                             <button type="button" class="btn-icon sub-circle theme-btn" id="btn-theme-toggle" title="Toggle Dark/Light Mode">
                                 <span class="material-icons-round" id="theme-icon">light_mode</span>
                             </button>
@@ -172,7 +170,7 @@
                 </div>
             </header>
             
-            <!-- Dashboard View: Summary Cards & Charts -->
+            <!-- Dashboard View -->
             <section id="view-dashboard" class="view-section active">
                 <div class="insight-banner" id="financial-insight">
                     <div class="icon-box"><span class="material-icons-round">psychology</span></div>
@@ -212,66 +210,65 @@
                     </div>
                 </div>
                 
-                <!-- Quick Transaction Logger -->
-                <div class="panel quick-log-panel">
-                    <h2 class="panel-title"><span class="material-icons-round" style="color:var(--success);">flash_on</span> Quick Log Transaction</h2>
-                    
-                    <!-- AI Smart Parser -->
-                    <div class="form-group" style="margin-top: 10px; margin-bottom: 14px;">
-                        <div class="ai-parser-row">
-                            <input type="text" id="ai-text-input" class="form-control" placeholder="Contoh: 'Beli kopi 25rb' atau 'Gajian 10jt'...">
-                            <div class="ai-parser-actions">
-                                <button type="button" id="btn-ai-text-submit" class="btn-primary" title="Proses dengan AI">
-                                    <span class="material-icons-round" style="font-size: 20px;">auto_awesome</span>
-                                </button>
-                                <button type="button" id="btn-voice-tx" class="btn-voice-icon" title="Input Suara">
-                                    <span class="material-icons-round" style="font-size: 20px;">mic</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="voice-feedback" style="display: none; color: var(--info); font-size: 0.85rem; margin-bottom: 12px; padding: 8px 12px; background: rgba(59, 130, 246, 0.1); border-radius: 6px; font-weight: 600;">
-                        <span class="material-icons-round" style="font-size: 16px; vertical-align: middle; animation: pulse 1.5s infinite;">mic</span> Listening... Speak your transaction now.
-                    </div>
-
-                    <form id="form-add-tx">
-                        <div class="grid-4 quick-log-grid">
-                            <div class="form-group">
-                                <label>Transaction Date</label>
-                                <input type="date" id="add-date" class="form-control" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Transaction Type</label>
-                                <select id="add-type" class="form-control" required>
-                                    <option value="income">Income</option>
-                                    <option value="expense" selected>Expense</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Category</label>
-                                <select id="add-category" class="form-control" required></select>
-                            </div>
-                            <div class="form-group">
-                                <label>Amount (IDR)</label>
-                                <input type="number" id="add-amount" class="form-control" placeholder="e.g. 150000" required>
-                                <span class="format-helper" id="helper-add-amount"></span>
-                            </div>
-                        </div>
-
-                        <div class="form-group" style="margin-top: 10px; margin-bottom: 14px;">
-                            <label>Description (Optional)</label>
-                            <input type="text" id="add-note" class="form-control" placeholder="What was this transaction for?">
-                        </div>
-
-                        <div style="display: flex; justify-content: flex-end;">
-                            <button type="submit" id="btn-save-transaction" class="btn-primary">
-                                <span class="material-icons-round" style="font-size: 19px;">save</span>
-                                <span>Save Transaction</span>
+            <!-- Quick Transaction Logger -->
+            <div class="panel quick-log-panel">
+                <h2 class="panel-title"><span class="material-icons-round" style="color:var(--success);">flash_on</span> Quick Log Transaction</h2>
+                
+                <div class="form-group" style="margin-top: 10px; margin-bottom: 14px;">
+                    <div class="ai-parser-row">
+                        <input type="text" id="ai-text-input" class="form-control" placeholder="Contoh: 'Beli kopi 25rb' atau 'Gajian 10jt'...">
+                        <div class="ai-parser-actions">
+                            <button type="button" id="btn-ai-text-submit" class="btn-primary" title="Proses dengan AI">
+                                <span class="material-icons-round" style="font-size: 20px;">auto_awesome</span>
+                            </button>
+                            <button type="button" id="btn-voice-tx" class="btn-voice-icon" title="Input Suara">
+                                <span class="material-icons-round" style="font-size: 20px;">mic</span>
                             </button>
                         </div>
-                    </form>
+                    </div>
                 </div>
+
+                <div id="voice-feedback" style="display: none; color: var(--info); font-size: 0.85rem; margin-bottom: 12px; padding: 8px 12px; background: rgba(59, 130, 246, 0.1); border-radius: 6px; font-weight: 600;">
+                    <span class="material-icons-round" style="font-size: 16px; vertical-align: middle; animation: pulse 1.5s infinite;">mic</span> Mendengarkan... Ucapkan transaksi Anda.
+                </div>
+
+                <form id="form-add-tx">
+                    <div class="grid-4 quick-log-grid">
+                        <div class="form-group">
+                            <label>Transaction Date</label>
+                            <input type="date" id="add-date" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Transaction Type</label>
+                            <select id="add-type" class="form-control" required>
+                                <option value="income">Income</option>
+                                <option value="expense" selected>Expense</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="add-category" class="form-control" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Amount (IDR)</label>
+                            <input type="number" id="add-amount" class="form-control" placeholder="e.g. 150000" required>
+                            <span class="format-helper" id="helper-add-amount"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 10px; margin-bottom: 14px;">
+                        <label>Description (Optional)</label>
+                        <input type="text" id="add-note" class="form-control" placeholder="What was this transaction for?">
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end;">
+                        <button type="submit" id="btn-save-transaction" class="btn-primary">
+                            <span class="material-icons-round" style="font-size: 19px;">save</span>
+                            <span>Save Transaction</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
                 
                 <!-- Transaction History Table -->
                 <div class="panel">
@@ -281,37 +278,48 @@
                     </div>
                     <div class="table-wrapper" style="max-height: 500px; overflow-y: auto;">
                         <table id="table-all">
-                            <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Note</th><th>Amount</th><th>Action</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th class="sortable" onclick="sortTable('date')">Date <span class="material-icons-round sort-icon" id="icon-sort-date">swap_vert</span></th>
+                                    <th class="sortable" onclick="sortTable('type')">Type <span class="material-icons-round sort-icon" id="icon-sort-type">swap_vert</span></th>
+                                    <th class="sortable" onclick="sortTable('category')">Category <span class="material-icons-round sort-icon" id="icon-sort-category">swap_vert</span></th>
+                                    <th>Note</th>
+                                    <th class="sortable" onclick="sortTable('amount')">Amount <span class="material-icons-round sort-icon" id="icon-sort-amount">swap_vert</span></th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
                             <tbody id="tbody-fiat-history"></tbody>
                         </table>
                     </div>
                 </div>
             </section>
             
-            <!-- Budget Planner View: Monthly Expense Targets & Progress -->
+<!-- Budget Planner View -->
             <section id="view-budget" class="view-section">
                 <div class="grid-2" style="align-items: flex-start;">
                     <div class="panel">
-                        <h2 class="panel-title"><span class="material-icons-round">edit_note</span> Set Monthly Expense Target</h2>
-                        <form id="form-budget" style="margin-bottom: 32px; margin-top: 16px">
-                            <div class="grid-2">
-                                <div class="form-group">
-                                    <label>Category (Expense Only)</label>
-                                    <select id="bud-cat" class="form-control" required></select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Budget Limit (IDR)</label>
-                                    <input type="number" id="bud-amount" class="form-control" required>
-                                    <span class="format-helper" id="helper-bud-amount"></span>
-                                </div>
+                        <h2 class="panel-title"><span class="material-icons-round" style="color:var(--primary);">tune</span> Set Monthly Expense Target</h2>
+                        <form id="form-budget">
+                            <div class="form-group">
+                                <label for="bud-cat">Category (Expense Only)</label>
+                                <select id="bud-cat" class="form-control" required></select>
                             </div>
-                            <div style="display: flex; justify-content: flex-end;">
-                                <button type="submit" class="btn-primary" style="width: auto; padding: 12px 32px;">Save Target</button>
+                            <div class="form-group">
+                                <label for="bud-amount">Budget Limit (IDR)</label>
+                                <input type="number" id="bud-amount" class="form-control" placeholder="e.g. 1000000" min="1" required>
+                                <span class="format-helper" id="helper-bud-amount" style="display:block; margin-top:6px;"></span>
+                            </div>
+                            <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+                                <button type="submit" class="btn-primary" style="width:auto; padding:10px 24px;">Save Target</button>
                             </div>
                         </form>
-                        <h3 style="font-size:0.85rem; color:var(--text-muted); margin-bottom:16px; text-transform:uppercase; font-weight:700;">Active Configurations</h3>
-                        <div id="list-budget-plans" style="display:flex; flex-direction:column; gap:12px;"></div>
+
+                        <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border);">
+                            <h3 style="font-size:0.78rem; font-weight:700; letter-spacing:0.6px; color:var(--text-muted); text-transform:uppercase; margin-bottom:14px;">ACTIVE CONFIGURATIONS</h3>
+                            <div id="list-budget-plans" style="display:flex; flex-direction:column; gap:8px;"></div>
+                        </div>
                     </div>
+
                     <div class="panel">
                         <div class="panel-header">
                             <h2 class="panel-title" style="margin-bottom:0;"><span class="material-icons-round" style="color:var(--warning);">track_changes</span> Reality vs Target</h2>
@@ -322,7 +330,7 @@
                 </div>
             </section>
             
-            <!-- Subscriptions View: Recurring Bills & Fixed Costs -->
+            <!-- Subscriptions View -->
             <section id="view-subscriptions" class="view-section">
                 <div class="grid-3">
                     <div class="stat-card" style="border-left: 4px solid var(--purple); grid-column: span 1;">
@@ -370,7 +378,7 @@
                 </div>
             </section>
             
-            <!-- Savings Goals View: Long-term Financial Targets -->
+            <!-- Savings Goals View -->
             <section id="view-savings" class="view-section">
                 <div class="panel">
                     <div class="panel-header">
@@ -402,7 +410,7 @@
                 </div>
             </section>
             
-            <!-- Wishlist View: Future Purchase Planning -->
+            <!-- Wishlist View -->
             <section id="view-wishlist" class="view-section">
                 <div class="panel">
                     <div class="panel-header">
@@ -438,19 +446,135 @@
                 </div>
             </section>
 
-            <!-- Analytics View: Detailed Category Trends -->
+<!-- Analytics View -->
             <section id="view-analytics" class="view-section">
-                <div class="grid-4" id="analytic-stats"></div>
-                <div class="panel">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
-                        <h2 class="panel-title" style="margin:0;"><span class="material-icons-round" style="color:var(--primary);">timeline</span> Category Detailed Trend (All Time)</h2>
-                        <select id="ana-category" class="form-control" style="width:250px; margin:0;"></select>
+                <!-- Header Section -->
+                <div style="display:flex; justify-content:space-between; align-items:center; padding: 0 2px;">
+                    <h2 style="font-size:1.1rem; font-weight:700; margin:0;">Financial Overview</h2>
+                    <span id="ana-period-badge" style="font-size:0.82rem; color:var(--text-muted);">Year 2026 • in IDR</span>
+                </div>
+
+                <!-- Baris 1: 4 Summary Cards -->
+                <div class="grid-4">
+                    <div class="stat-card" style="border-left: 3px solid var(--success);">
+                        <div class="stat-info" style="flex:1;">
+                            <h3>TOTAL INCOME</h3>
+                            <h2 id="ana-total-income" style="color: var(--success);">Rp 0</h2>
+                            <p id="ana-income-trx">0 transactions</p>
+                        </div>
+                        <div class="stat-icon" style="background: rgba(16, 185, 129, 0.12); color: var(--success); border-radius: 50%;">
+                            <span class="material-icons-round">trending_up</span>
+                        </div>
                     </div>
-                    <div class="chart-container"><canvas id="analyticsDetailChart"></canvas></div>
+
+                    <div class="stat-card" style="border-left: 3px solid var(--danger);">
+                        <div class="stat-info" style="flex:1;">
+                            <h3>TOTAL EXPENSES</h3>
+                            <h2 id="ana-total-expense" style="color: var(--danger);">Rp 0</h2>
+                            <p id="ana-expense-trx">0 transactions</p>
+                        </div>
+                        <div class="stat-icon" style="background: rgba(239, 68, 68, 0.12); color: var(--danger); border-radius: 50%;">
+                            <span class="material-icons-round">trending_down</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" style="border-left: 3px solid var(--info);">
+                        <div class="stat-info" style="flex:1;">
+                            <h3>NET CASH FLOW</h3>
+                            <h2 id="ana-net-amount" style="color: var(--info);">Rp 0</h2>
+                            <p>Income - Expenses</p>
+                        </div>
+                        <div class="stat-icon" style="background: rgba(59, 130, 246, 0.12); color: var(--info); border-radius: 50%;">
+                            <span class="material-icons-round">account_balance</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" style="border-left: 3px solid var(--primary);">
+                        <div class="stat-info" style="flex:1;">
+                            <h3>SAVINGS RATE</h3>
+                            <h2 id="ana-savings-rate" style="color: var(--primary);">0%</h2>
+                            <p id="ana-avg-net">Avg Net: Rp 0 / mo</p>
+                        </div>
+                        <div class="stat-icon" style="background: rgba(99, 102, 241, 0.12); color: var(--primary); border-radius: 50%;">
+                            <span class="material-icons-round">savings</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Baris 2: Income vs Expense Trend (Full Width — Lebar Sama dengan Category Detailed Trend) -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title" style="margin:0;">
+                            <span class="material-icons-round" style="color:var(--primary);">show_chart</span>
+                            Income vs Expense Trend
+                        </h2>
+                        <span id="ana-trend-label" style="font-size:0.82rem; color:var(--text-muted);">Monthly Comparison</span>
+                    </div>
+                    <div class="chart-container" style="height: 260px;">
+                        <canvas id="analyticsIncExpChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Baris 3: Category Detailed Trend (Full Width) -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2 class="panel-title" id="ana-detail-title" style="margin:0;">
+                                <span class="material-icons-round" style="color:var(--primary);">timeline</span>
+                                Category Detailed Trend
+                            </h2>
+                            <div id="ana-detail-stats" style="font-size:0.82rem; color:var(--text-muted); margin-top:4px;">
+                                Total: Rp 0 • Avg / Month: Rp 0 • Peak: Rp 0
+                            </div>
+                        </div>
+                        <select id="ana-category" class="form-control" style="width:240px; margin:0;"></select>
+                    </div>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="analyticsDetailChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Baris 4: Period Performance Summary (Kiri) & Expense Breakdown (Kanan) -->
+                <div class="grid-chart">
+                    <!-- Kolom Kiri: Period Performance Summary (Menggantikan Posisi Financial Insights) -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2 class="panel-title" style="margin:0;">
+                                <span class="material-icons-round" style="color:var(--success);">table_view</span>
+                                Period Performance Summary
+                            </h2>
+                        </div>
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>PERIOD</th>
+                                        <th>INCOME</th>
+                                        <th>EXPENSE</th>
+                                        <th>NET CASH FLOW</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-monthly-perf"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Kolom Kanan: Expense Breakdown -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2 class="panel-title" style="margin:0;">
+                                <span class="material-icons-round" style="color:var(--warning);">donut_large</span>
+                                Expense Breakdown
+                            </h2>
+                        </div>
+                        <div class="chart-container" style="height: 260px;">
+                            <canvas id="analyticsDonutChart"></canvas>
+                        </div>
+                    </div>
                 </div>
             </section>
             
-            <!-- Settings View: Categories, Backup & Cloud Sync -->
+            <!-- Settings View -->
             <section id="view-settings" class="view-section">
                 <div class="grid-3">
                     <div class="panel">
@@ -537,13 +661,13 @@
     <div id="toast-container" aria-live="polite"></div>
 
     <!-- Application Script -->
-    <script src="script.js?v=108"></script>
+    <script src="script.js?v=1116"></script>
     <script src="voice.js"></script>
     <script src="report.js"></script>
 
     <!-- Service Worker Registration -->
     <script>
-        if ('serviceWorker' in navigator) {
+        if ('serviceWorker' in navigator) { 
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
                     .then(reg => console.log('Service Worker Registered!', reg))
